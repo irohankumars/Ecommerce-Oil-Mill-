@@ -5,7 +5,6 @@ import MenuItem from "./MenuItem.jsx";
 import MegaMenu from "./MegaMenu.jsx";
 
 const desktopItems = [
-  { label: "Home", href: "/" },
   { label: "Shop", href: "/shop", dropdown: "shop" },
   { label: "Cold Pressed Oils", href: "/shop", dropdown: "coldPressed" },
   { label: "Essential Oils", href: "/shop", dropdown: "essential" },
@@ -39,19 +38,35 @@ export default function DesktopMenu() {
       event.preventDefault();
       focusItem((index - 1 + desktopItems.length) % desktopItems.length);
     }
-    if ((event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") && item.dropdown) {
+    if (
+      (event.key === "ArrowDown" ||
+        event.key === "Enter" ||
+        event.key === " ") &&
+      item.dropdown
+    ) {
       event.preventDefault();
       setActive(item.dropdown);
     }
   };
 
   const activeItem = desktopItems.find((item) => item.dropdown === active);
-  const activeMega = active === "shop" || active === "coldPressed" || active === "essential" || active === "about";
+  const activeMega =
+    active === "shop" ||
+    active === "coldPressed" ||
+    active === "essential" ||
+    active === "about";
 
   return (
-    <div className="hidden bg-ink xl:block" onMouseLeave={() => setActive(null)}>
+    <div
+      className="hidden bg-ink xl:block"
+      onMouseLeave={() => setActive(null)}
+    >
       <div className="relative mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
-        <nav className="flex h-[54px] items-center justify-center" aria-label="Primary navigation" role="menubar">
+        <nav
+          className="flex h-[54px] items-center justify-center"
+          aria-label="Primary navigation"
+          role="menubar"
+        >
           {desktopItems.map((item, index) => (
             <div key={item.label} className="relative h-[54px]">
               <MenuItem
@@ -69,7 +84,11 @@ export default function DesktopMenu() {
           ))}
         </nav>
         <MegaMenu
-          menu={activeMega ? { label: activeItem?.label, data: megaMenus[active] } : null}
+          menu={
+            activeMega
+              ? { label: activeItem?.label, data: megaMenus[active] }
+              : null
+          }
           open={activeMega}
           onNavigate={() => setActive(null)}
         />
