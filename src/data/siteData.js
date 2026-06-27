@@ -92,7 +92,7 @@ export const megaMenus = {
 export const categoryTiles = [
   { name: "Daily Cooking", image: "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=900&q=80" },
   { name: "Wellness Oils", image: "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&w=900&q=80" },
-  { name: "Traditional Tempering", image: "https://images.unsplash.com/photo-1605196560547-b2f7281c4d37?auto=format&fit=crop&w=900&q=80" },
+  { name: "Traditional Oils", image: "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=900&q=80" },
   { name: "Gift Bundles", image: "https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?auto=format&fit=crop&w=900&q=80" },
 ];
 

@@ -11,8 +11,7 @@ export default function AppProviders({ children }) {
       <WishlistProvider>
         <PopupProvider>
           <CartProvider>
-            <IntroLoader />
-            {children}
+            <IntroLoader>{children}</IntroLoader>
           </CartProvider>
         </PopupProvider>
       </WishlistProvider>
