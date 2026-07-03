@@ -1,0 +1,18 @@
+﻿// Authenticates requests using bearer token or auth cookie.
+import User from "../models/User.js";
+import { ApiError } from "../utils/ApiError.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { verifyToken } from "../utils/jwt.js";
+
+export const protect = asyncHandler(async (req, res, next) => {
+  const bearer = req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.split(" ")[1] : null;
+  const token = bearer || req.cookies?.token;
+  if (!token) throw new ApiError("Authentication required.", 401);
+
+  const decoded = verifyToken(token);
+  const user = await User.findById(decoded.id);
+  if (!user) throw new ApiError("User no longer exists.", 401);
+
+  req.user = user;
+  next();
+});
