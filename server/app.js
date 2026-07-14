@@ -20,6 +20,7 @@ import contentRoutes from "./routes/contentRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
+import securityRoutes from "./routes/securityRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
 
@@ -77,6 +78,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/security", securityRoutes);
 app.use("/api", contactRoutes);
 app.use("/api/content", contentRoutes);
 
@@ -84,5 +86,6 @@ app.use(notFound);
 app.use(errorHandler);
 
 export default app;
+
 
 

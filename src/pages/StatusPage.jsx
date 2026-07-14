@@ -1,12 +1,13 @@
 ﻿// Renders production error, auth, offline, and reliability state pages.
 import { Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import Breadcrumb from "../components/common/Breadcrumb.jsx";
 import Button from "../components/ui/Button.jsx";
 import Container from "../components/ui/Container.jsx";
 
 const defaults = {
-  401: ["Login Required", "Please sign in to continue."],
+  401: ["Login Required", "Please log in first to proceed."],
   403: ["Access Denied", "You do not have permission to view this page."],
   404: ["Page Not Found", "The page you are looking for may have moved."],
   429: ["Too Many Requests", "Please wait a moment before trying again."],
@@ -23,6 +24,7 @@ const defaults = {
 };
 
 export default function StatusPage({ code = "404", title, message, retry = false }) {
+  const location = useLocation();
   const [copied, setCopied] = useState(false);
   const [defaultTitle, defaultMessage] = defaults[code] || defaults["404"];
   const orderId = "VELORA-DEMO-1001";
@@ -32,6 +34,7 @@ export default function StatusPage({ code = "404", title, message, retry = false
     setCopied(true);
   };
 
+  const isLoginRequired = String(code) === "401";
   const isOrderState = String(code).startsWith("payment") || code === "order-cancelled";
 
   return (
@@ -57,12 +60,13 @@ export default function StatusPage({ code = "404", title, message, retry = false
               </div>
             )}
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              {retry && (
+              {isLoginRequired && <Button to="/login" state={{ from: location.pathname }}>Login to continue</Button>}
+              {retry && !isLoginRequired && (
                 <Button onClick={() => window.location.reload()}>
                   <RotateCcw size={17} /> Retry
                 </Button>
               )}
-              <Button to="/shop" variant={retry ? "secondary" : "primary"}>Shop Oils</Button>
+              <Button to="/shop" variant={retry || isLoginRequired ? "secondary" : "primary"}>Shop Oils</Button>
             </div>
           </div>
         </Container>
@@ -70,5 +74,7 @@ export default function StatusPage({ code = "404", title, message, retry = false
     </>
   );
 }
+
+
 
 

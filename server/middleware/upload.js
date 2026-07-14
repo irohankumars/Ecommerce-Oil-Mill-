@@ -1,12 +1,16 @@
 ﻿// Multer memory upload middleware for image endpoints.
+import path from "path";
 import multer from "multer";
 import { ApiError } from "../utils/ApiError.js";
 
 const storage = multer.memoryStorage();
+const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const allowedExtensions = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif"]);
 
 function fileFilter(req, file, cb) {
-  if (!file.mimetype.startsWith("image/")) {
-    return cb(new ApiError("Only image uploads are allowed.", 400));
+  const extension = path.extname(file.originalname || "").toLowerCase();
+  if (!allowedMimeTypes.has(file.mimetype) || !allowedExtensions.has(extension)) {
+    return cb(new ApiError("Only JPG, PNG, WebP, and GIF image uploads are allowed.", 400));
   }
   cb(null, true);
 }
@@ -14,5 +18,5 @@ function fileFilter(req, file, cb) {
 export const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 3 * 1024 * 1024, files: 1 },
 });

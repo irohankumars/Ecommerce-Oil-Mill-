@@ -1,7 +1,7 @@
 ﻿// Renders the refined Login page experience.
 import { ChevronLeft } from "lucide-react";
 import { useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button.jsx";
 import Container from "../components/ui/Container.jsx";
 import Input from "../components/ui/Input.jsx";
@@ -9,6 +9,7 @@ import { loginAccount } from "../services/authService.js";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const emailRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -21,7 +22,7 @@ export default function Login() {
     setLoading(true);
     try {
       await loginAccount({ email: form.get("email"), password: form.get("password") });
-      navigate("/", { replace: true });
+      navigate(location.state?.from || "/", { replace: true });
     } catch (err) {
       setError(err.message || "Unable to login. Please try again.");
     } finally {
@@ -47,3 +48,5 @@ export default function Login() {
     </section>
   );
 }
+
+

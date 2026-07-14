@@ -2,7 +2,12 @@
 import { body, param } from "express-validator";
 
 export const paymentIntentValidator = [
-  body("amount").isFloat({ min: 1 }).withMessage("Amount must be positive."),
+  body("products").optional().isArray({ min: 1 }).withMessage("At least one product is required."),
+  body("products.*.product").optional().isMongoId().withMessage("Valid product id is required."),
+  body("products.*.quantity").optional().isInt({ min: 1 }).withMessage("Quantity must be at least 1."),
+  body("order.products").optional().isArray({ min: 1 }).withMessage("At least one product is required."),
+  body("order.products.*.product").optional().isMongoId().withMessage("Valid product id is required."),
+  body("order.products.*.quantity").optional().isInt({ min: 1 }).withMessage("Quantity must be at least 1."),
   body("receipt").optional().trim(),
 ];
 

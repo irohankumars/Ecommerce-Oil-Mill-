@@ -1,4 +1,4 @@
-﻿// Database seed script for local development data.
+﻿// Simple development-only seed data for local testing.
 import mongoose from "mongoose";
 import { connectDB } from "../config/db.js";
 import Category from "../models/Category.js";
@@ -7,34 +7,37 @@ import Product from "../models/Product.js";
 import User from "../models/User.js";
 import { slugify } from "../utils/slugify.js";
 
+if (process.env.NODE_ENV === "production") {
+  console.error("Seed script is disabled in production.");
+  process.exit(1);
+}
+
 const resetOnly = process.argv.includes("--reset");
+
+const imageUrls = [
+  "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?auto=format&fit=crop&w=900&q=80",
+];
 
 const categorySeeds = [
   ["Groundnut Oils", "Daily cooking oils with a balanced nutty finish."],
-  ["Sesame Oils", "Traditional oils for cooking, massage, and wellness rituals."],
+  ["Sesame Oils", "Traditional oils for cooking and wellness rituals."],
   ["Coconut Oils", "Aromatic oils for cooking and pantry care."],
   ["Mustard Oils", "Bold cold pressed oils for regional recipes."],
   ["Sunflower Oils", "Light everyday oils for family kitchens."],
   ["Wellness Oils", "Small-batch oils for mindful care routines."],
 ];
 
-const productNames = [
-  "Classic Groundnut Oil", "Wood Pressed Groundnut Oil", "Family Groundnut Oil", "Roasted Groundnut Oil",
-  "Golden Sesame Oil", "Black Sesame Oil", "Traditional Gingelly Oil", "Sesame Wellness Oil",
-  "Virgin Coconut Oil", "Coconut Cooking Oil", "Aromatic Coconut Oil",
-  "Kachi Ghani Mustard Oil", "Premium Mustard Oil", "Mustard Cooking Oil",
-  "Cold Pressed Sunflower Oil", "Light Sunflower Oil", "Everyday Sunflower Oil",
-  "Flaxseed Wellness Oil", "Castor Care Oil", "Almond Wellness Oil",
+const productSeeds = [
+  ["Classic Groundnut Oil", 349, 299, 18, 0, true],
+  ["Wood Pressed Groundnut Oil", 399, 349, 14, 0, true],
+  ["Golden Sesame Oil", 449, 399, 16, 1, true],
+  ["Traditional Gingelly Oil", 429, 379, 12, 1, true],
+  ["Virgin Coconut Oil", 499, 449, 10, 2, true],
+  ["Kachi Ghani Mustard Oil", 379, 329, 20, 3, false],
+  ["Cold Pressed Sunflower Oil", 329, 299, 22, 4, false],
+  ["Flaxseed Wellness Oil", 599, 549, 8, 5, false],
 ];
-
-function productCategoryIndex(index) {
-  if (index < 4) return 0;
-  if (index < 8) return 1;
-  if (index < 11) return 2;
-  if (index < 14) return 3;
-  if (index < 17) return 4;
-  return 5;
-}
 
 async function seed() {
   await connectDB();
@@ -46,32 +49,39 @@ async function seed() {
     return;
   }
 
-  const admin = await User.create({ name: "Admin User", email: "admin@velora.test", password: "Admin@12345", role: "admin" });
+  const admin = await User.create({
+    name: "Admin User",
+    email: "admin@velora.test",
+    password: "Admin@12345",
+    role: "admin",
+    emailVerified: true,
+  });
+
   const categories = await Category.insertMany(
     categorySeeds.map(([name, description], index) => ({
       name,
       slug: slugify(name),
       description,
-      image: `https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=900&q=80&sig=${index}`,
-    })),
+      image: imageUrls[index % imageUrls.length],
+    }))
   );
 
-  await Product.insertMany(
-    productNames.map((title, index) => ({
+  const products = await Product.insertMany(
+    productSeeds.map(([title, price, discountPrice, stock, categoryIndex, featured], index) => ({
       title,
       slug: slugify(title),
-      description: `${title} is crafted in small batches for clean flavor, natural aroma, and everyday kitchen confidence.`,
-      price: 349 + index * 25,
-      discountPrice: index % 3 === 0 ? 299 + index * 20 : undefined,
-      stock: 24 + index,
-      category: categories[productCategoryIndex(index)]._id,
-      images: [{ url: `https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=900&q=80&sig=product-${index}` }],
-      featured: index < 8,
+      description: `${title} is a simple test product for local development and API checks.`,
+      price,
+      discountPrice,
+      stock,
+      category: categories[categoryIndex]._id,
+      images: [{ url: imageUrls[index % imageUrls.length], publicId: null }],
+      featured,
       isActive: true,
-    })),
+    }))
   );
 
-  console.log(`Seed complete. Admin: ${admin.email} / Admin@12345`);
+  console.log(`Seed complete. Categories: ${categories.length}. Products: ${products.length}. Admin: ${admin.email} / Admin@12345`);
   await mongoose.disconnect();
 }
 

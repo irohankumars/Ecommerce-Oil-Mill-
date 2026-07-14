@@ -1,6 +1,7 @@
 ﻿// Defines all public storefront routes.
 import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
+import ProtectedRoute from "../components/features/auth/ProtectedRoute.jsx";
 import PageLoader from "../components/features/feedback/PageLoader.jsx";
 import About from "../pages/About.jsx";
 import Home from "../pages/Home.jsx";
@@ -28,7 +29,7 @@ export default function AppRoutes() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/product/:slug" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
         <Route path="/about" element={<About />} />
         <Route path="/about/faq" element={<FAQ />} />
         <Route path="/about/story" element={<OurStory />} />
@@ -56,6 +57,8 @@ export default function AppRoutes() {
     </Suspense>
   );
 }
+
+
 
 
 

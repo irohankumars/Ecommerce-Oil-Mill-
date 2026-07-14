@@ -1,0 +1,1 @@
+import{b as n,A as o,o as a}from"./index-DAGysbEe.js";async function s(e){const t=await n(o.auth.login,{method:"POST",body:JSON.stringify(e)});return a(t.token,t.refreshToken),t}async function i(e){const t=await n(o.auth.register,{method:"POST",body:JSON.stringify(e)});return a(t.token,t.refreshToken),t}export{s as l,i as r};

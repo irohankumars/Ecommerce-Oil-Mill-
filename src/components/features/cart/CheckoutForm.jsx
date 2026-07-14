@@ -2,6 +2,7 @@
 import { CreditCard, Home, Truck } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getAuthToken } from "../../../api/apiClient.js";
 import { createOrder } from "../../../services/checkoutService.js";
 import { useCart } from "../../../hooks/useCart.jsx";
 import { formatCurrency } from "../../../utils/formatCurrency.js";
@@ -18,6 +19,10 @@ export default function CheckoutForm() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (loading) return;
+    if (!getAuthToken()) {
+      navigate("/login", { state: { from: "/checkout" } });
+      return;
+    }
     const form = new FormData(event.currentTarget);
     const shippingAddress = {
       fullName: `${form.get("firstName")} ${form.get("lastName")}`.trim(),
@@ -97,3 +102,5 @@ export default function CheckoutForm() {
     </form>
   );
 }
+
+
