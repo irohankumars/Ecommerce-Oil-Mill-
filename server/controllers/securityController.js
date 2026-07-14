@@ -4,16 +4,22 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import { logSecurityEvent } from "../services/securityEventService.js";
 
-const restrictionWindowMs = 72 * 60 * 60 * 1000;
-const suspiciousThreshold = 5;
+const lookbackMs = 72 * 60 * 60 * 1000;
+const warningThreshold = 6;
+const restrictionThreshold = 12;
+const baseRestrictionMs = 30 * 60 * 1000;
 
 export const reportSuspiciousActivity = asyncHandler(async (req, res) => {
-  await logSecurityEvent(req, "suspicious_client_activity", { signal: req.body.signal }, "medium");
-  const since = new Date(Date.now() - restrictionWindowMs);
-  const query = { type: "suspicious_client_activity", createdAt: { $gte: since } };
-  if (req.user?._id) query.user = req.user._id;
-  else query.ip = req.ip;
+  const deviceId = req.body.deviceId;
+  await logSecurityEvent(req, "suspicious_client_activity", { signal: req.body.signal, deviceId }, "medium");
+  const since = new Date(Date.now() - lookbackMs);
+  const identity = [];
+  if (req.user?._id) identity.push({ user: req.user._id });
+  if (deviceId) identity.push({ "metadata.deviceId": deviceId });
+  identity.push({ ip: req.ip });
+  const query = { type: "suspicious_client_activity", createdAt: { $gte: since }, $or: identity };
   const count = await SecurityEvent.countDocuments(query);
-  const restrictedUntil = count >= suspiciousThreshold ? new Date(Date.now() + restrictionWindowMs).toISOString() : null;
-  sendSuccess(res, 200, "Security event recorded", { restricted: Boolean(restrictedUntil), restrictedUntil, count });
+  const restrictionLevel = Math.max(0, Math.floor((count - restrictionThreshold) / 6));
+  const restrictedUntil = count >= restrictionThreshold ? new Date(Date.now() + baseRestrictionMs * (restrictionLevel + 1)).toISOString() : null;
+  sendSuccess(res, 200, "Security event recorded", { warning: count >= warningThreshold, restricted: Boolean(restrictedUntil), restrictedUntil, count });
 });

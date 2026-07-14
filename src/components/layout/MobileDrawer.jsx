@@ -8,7 +8,7 @@ import { useCart } from "../../hooks/useCart.jsx";
 import Button from "../ui/Button.jsx";
 import AccordionMenu from "./AccordionMenu.jsx";
 
-export default function MobileDrawer({ open, onClose, onWishlist }) {
+export default function MobileDrawer({ open, onClose, onWishlist, accountPath = "/login", authenticated = false }) {
   const { items } = useCart();
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -74,8 +74,8 @@ export default function MobileDrawer({ open, onClose, onWishlist }) {
               </Link>
             </nav>
             <div className="mt-6 grid gap-3 pb-2">
-              <Link to="/login" onClick={onClose} className="flex items-center gap-3 rounded-2xl bg-white p-4 font-semibold shadow-sm">
-                <UserRound size={19} className="text-leaf" />
+              <Link to={accountPath} onClick={onClose} className="flex items-center gap-3 rounded-2xl bg-white p-4 font-semibold shadow-sm">
+                <UserRound size={19} fill={authenticated ? "currentColor" : "none"} className="text-leaf" />
                 Account
               </Link>
               <button type="button" data-popup-trigger="wishlist" onClick={() => { onWishlist?.(); onClose(); }} className="flex items-center gap-3 rounded-2xl bg-white p-4 text-left font-semibold shadow-sm">
@@ -101,5 +101,7 @@ export default function MobileDrawer({ open, onClose, onWishlist }) {
     </AnimatePresence>
   );
 }
+
+
 
 

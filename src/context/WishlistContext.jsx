@@ -1,6 +1,7 @@
 ﻿// Stores wishlist state synchronized with backend APIs.
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { getAuthToken } from "../api/apiClient.js";
+import { useAuth } from "./AuthContext.jsx";
 import { addWishlist, fetchWishlist, removeWishlist } from "../services/wishlistService.js";
 import { readGuestSession, writeGuestSession } from "../utils/guestSession.js";
 
@@ -8,13 +9,14 @@ const WishlistContext = createContext(null);
 
 export function WishlistProvider({ children }) {
   const [items, setItems] = useState(() => readGuestSession().data.wishlist);
+  const { authenticated } = useAuth();
 
   useEffect(() => {
     let active = true;
     if (!getAuthToken()) return undefined;
     fetchWishlist().then((wishlist) => active && setItems(wishlist)).catch(() => {});
     return () => { active = false; };
-  }, []);
+  }, [authenticated]);
 
   useEffect(() => {
     writeGuestSession({ wishlist: items });
@@ -60,3 +62,4 @@ export function useWishlist() {
   if (!context) throw new Error("useWishlist must be used within WishlistProvider");
   return context;
 }
+

@@ -1,14 +1,16 @@
 ﻿// Renders the Signup page experience with frontend validation.
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button.jsx";
-import { registerAccount } from "../services/authService.js";
+import { useAuth } from "../context/AuthContext.jsx";
 import Container from "../components/ui/Container.jsx";
 import Input from "../components/ui/Input.jsx";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { register } = useAuth();
   const firstFieldRef = useRef(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,9 +41,9 @@ export default function Signup() {
     setLoading(true);
     setSubmitError("");
     try {
-      await registerAccount({ name: form.name, email: form.email, phone: form.phone, password: form.password });
+      await register({ name: form.name, email: form.email, phone: form.phone, password: form.password });
       setSuccess(true);
-      navigate("/", { replace: true });
+      navigate(location.state?.from || "/account", { replace: true });
     } catch (err) {
       setSuccess(false);
       setSubmitError(err.message || "Unable to create account. Please try again.");
@@ -84,6 +86,7 @@ export default function Signup() {
     </section>
   );
 }
+
 
 
 

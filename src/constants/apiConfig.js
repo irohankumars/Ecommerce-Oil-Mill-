@@ -27,6 +27,8 @@ export const API_ENDPOINTS = {
   wishlist: "/wishlist",
   wishlistItem: (id) => `/wishlist/${id}`,
   orders: "/orders",
+  myOrders: "/orders/my",
+  order: (id) => `/orders/${id}`,
   paymentIntent: "/payments/intent",
   paymentVerify: "/payments/verify",
   contact: "/contact",
@@ -34,3 +36,5 @@ export const API_ENDPOINTS = {
   faqs: "/content/faqs",
   pageContent: (slug) => `/content/pages/${slug}`,
 };
+
+

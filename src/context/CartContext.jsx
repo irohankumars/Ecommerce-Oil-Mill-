@@ -1,6 +1,7 @@
 ﻿// Provides cart state synchronized with backend cart APIs.
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { getAuthToken } from "../api/apiClient.js";
+import { useAuth } from "./AuthContext.jsx";
 import { addCartItem, clearCartApi, fetchCart, removeCartItem, updateCartItem } from "../services/cartService.js";
 import { readGuestSession, writeGuestSession } from "../utils/guestSession.js";
 
@@ -8,13 +9,14 @@ const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState(() => readGuestSession().data.cart);
+  const { authenticated } = useAuth();
 
   useEffect(() => {
     let active = true;
     if (!getAuthToken()) return undefined;
     fetchCart().then((cart) => active && setItems(cart)).catch(() => {});
     return () => { active = false; };
-  }, []);
+  }, [authenticated]);
 
   useEffect(() => {
     writeGuestSession({ cart: items });
@@ -74,3 +76,4 @@ export function useCartContext() {
   if (!context) throw new Error("useCart must be used within CartProvider");
   return context;
 }
+

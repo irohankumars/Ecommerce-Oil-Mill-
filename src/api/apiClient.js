@@ -4,6 +4,10 @@ import { API_BASE_URL } from "../constants/apiConfig.js";
 const TOKEN_KEY = "velora_token";
 const REFRESH_KEY = "velora_refresh_token";
 
+function notifyAuthChange() {
+  window.dispatchEvent(new Event("velora-auth-change"));
+}
+
 export function getAuthToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -15,11 +19,13 @@ function getCookie(name) {
 export function setAuthTokens(token, refreshToken) {
   if (token) localStorage.setItem(TOKEN_KEY, token);
   if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
+  notifyAuthChange();
 }
 
 export function clearAuthTokens() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  notifyAuthChange();
 }
 
 export async function apiRequest(endpoint, options = {}) {
@@ -41,3 +47,4 @@ export async function apiRequest(endpoint, options = {}) {
   }
   return payload.data ?? payload;
 }
+

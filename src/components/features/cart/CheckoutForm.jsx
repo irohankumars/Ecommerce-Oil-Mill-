@@ -1,9 +1,10 @@
 ﻿// Renders CheckoutForm for cart and checkout flows.
 import { CreditCard, Home, Truck } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuthToken } from "../../../api/apiClient.js";
 import { createOrder } from "../../../services/checkoutService.js";
+import { fetchAccountProfile } from "../../../services/accountService.js";
 import { useCart } from "../../../hooks/useCart.jsx";
 import { formatCurrency } from "../../../utils/formatCurrency.js";
 import { writeGuestSession } from "../../../utils/guestSession.js";
@@ -13,8 +14,35 @@ import Input from "../../ui/Input.jsx";
 export default function CheckoutForm() {
   const navigate = useNavigate();
   const { items, totals, clearCart } = useCart();
+  const formRef = useRef(null);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    let active = true;
+    if (!getAuthToken()) return undefined;
+    fetchAccountProfile().then((data) => {
+      if (!active) return;
+      setProfile(data.user);
+      setSavedAddresses(data.user?.addresses || []);
+      if (formRef.current?.elements?.email) formRef.current.elements.email.value = data.user?.email || "";
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const applyAddress = (address) => {
+    const form = formRef.current;
+    if (!form) return;
+    const [firstName = "", ...lastParts] = (address.fullName || "").split(" ");
+    form.elements.firstName.value = firstName;
+    form.elements.lastName.value = lastParts.join(" ");
+    form.elements.phone.value = address.phone || "";
+    form.elements.street.value = address.street || "";
+    form.elements.city.value = address.city || "";
+    form.elements.state.value = address.state || "";
+    form.elements.pin.value = address.postalCode || "";
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -65,14 +93,26 @@ export default function CheckoutForm() {
   };
 
   return (
-    <form className="rounded-3xl border border-ink/10 bg-white p-6 shadow-sm" onSubmit={handleSubmit}>
+    <form ref={formRef} className="rounded-3xl border border-ink/10 bg-white p-6 shadow-sm" onSubmit={handleSubmit}>
       <h1 className="font-serif text-4xl font-semibold">Checkout</h1>
       <p className="mt-3 text-sm font-semibold text-ink/55">Order total: {formatCurrency(totals.total)}</p>
       {error && <p className="mt-5 rounded-2xl bg-linen p-4 text-sm font-semibold text-danger">{error}</p>}
+      {savedAddresses.length > 0 && (
+        <div className="mt-6 rounded-2xl bg-linen p-4">
+          <p className="text-sm font-bold text-ink/65">Use a saved address</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {savedAddresses.map((address) => (
+              <button key={address._id} type="button" onClick={() => applyAddress(address)} className="rounded-xl bg-white p-3 text-left text-sm font-semibold text-ink/65 transition hover:text-leaf">
+                {address.label || "Address"}{address.isDefault ? " - Default" : ""}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="mt-8 grid gap-5 sm:grid-cols-2">
         <Input label="First name" name="firstName" required />
         <Input label="Last name" name="lastName" required />
-        <Input label="Email" name="email" type="email" required />
+        <Input label="Email" name="email" type="email" defaultValue={profile?.email || ""} required />
         <Input label="Phone" name="phone" type="tel" required />
       </div>
       <div className="mt-8">
@@ -102,5 +142,8 @@ export default function CheckoutForm() {
     </form>
   );
 }
+
+
+
 
 

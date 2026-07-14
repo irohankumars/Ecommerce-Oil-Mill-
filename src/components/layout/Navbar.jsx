@@ -2,6 +2,7 @@
 import { Heart, Menu, Search, ShoppingBag, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext.jsx";
 import { usePopup } from "../../context/PopupContext.jsx";
 import { useCart } from "../../hooks/useCart.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
@@ -50,8 +51,10 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { items } = useCart();
   const { items: wishlistItems } = useWishlist();
+  const { authenticated } = useAuth();
   const { togglePopup } = usePopup();
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
+  const accountPath = authenticated ? "/account" : "/login";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 8);
@@ -95,8 +98,8 @@ export default function Navbar() {
               <IconLink label="Wishlist" badge={wishlistItems.length} className="hidden xl:grid" onClick={() => togglePopup("wishlist")}>
                 <Heart size={19} />
               </IconLink>
-              <IconLink to="/login" label="Account" className="hidden xl:grid">
-                <UserRound size={19} />
+              <IconLink to={accountPath} label="Account" className="hidden xl:grid">
+                <UserRound size={19} fill={authenticated ? "currentColor" : "none"} />
               </IconLink>
               <IconLink
                 to="/cart"
@@ -119,9 +122,12 @@ export default function Navbar() {
         </div>
         <DesktopMenu />
       </header>
-      <MobileDrawer open={open} onClose={() => setOpen(false)} onWishlist={() => togglePopup("wishlist")} />
+      <MobileDrawer open={open} onClose={() => setOpen(false)} onWishlist={() => togglePopup("wishlist")} accountPath={accountPath} authenticated={authenticated} />
     </>
   );
 }
+
+
+
 
 

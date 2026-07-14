@@ -1,0 +1,342 @@
+﻿// Renders the authenticated My Account customer dashboard.
+import { Heart, Home, Lock, LogOut, MapPin, Package, ShieldCheck, UserRound } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Breadcrumb from "../components/common/Breadcrumb.jsx";
+import SafeImage from "../components/common/SafeImage.jsx";
+import AddToCartButton from "../components/features/product/AddToCartButton.jsx";
+import WishlistToggle from "../components/features/product/WishlistToggle.jsx";
+import Button from "../components/ui/Button.jsx";
+import Container from "../components/ui/Container.jsx";
+import Input from "../components/ui/Input.jsx";
+import { useWishlist } from "../context/WishlistContext.jsx";
+import { addAccountAddress, changeAccountPassword, deleteAccountAddress, fetchAccountProfile, updateAccountAddress, updateAccountProfile } from "../services/accountService.js";
+import { useAuth } from "../context/AuthContext.jsx";
+import { fetchMyOrders } from "../services/orderService.js";
+import { formatCurrency } from "../utils/formatCurrency.js";
+
+const tabs = [
+  { id: "profile", label: "My Profile", icon: UserRound },
+  { id: "orders", label: "My Orders", icon: Package },
+  { id: "addresses", label: "Saved Addresses", icon: MapPin },
+  { id: "wishlist", label: "Wishlist", icon: Heart },
+  { id: "security", label: "Account & Security", icon: ShieldCheck },
+  { id: "logout", label: "Logout", icon: LogOut },
+];
+
+const statusLabels = {
+  placed: "Placed",
+  confirmed: "Confirmed",
+  packed: "Processing",
+  processing: "Processing",
+  shipped: "Shipped",
+  out_for_delivery: "Out for Delivery",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  pending: "Pending",
+  paid: "Paid",
+  failed: "Failed",
+  refunded: "Refunded",
+};
+
+const emptyAddress = { label: "Home", fullName: "", phone: "", street: "", city: "", state: "", postalCode: "", country: "India", isDefault: false };
+
+function initials(name = "User") {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U";
+}
+
+function normalizeOrderProduct(item) {
+  return { id: item.product?._id || item.product || item.title, name: item.title, image: item.image || item.product?.images?.[0]?.url || "", price: item.price, quantity: item.quantity };
+}
+
+function formatDate(value) {
+  return value ? new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(new Date(value)) : "-";
+}
+
+export default function Account() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { items: wishlistItems } = useWishlist();
+  const [activeTab, setActiveTab] = useState("profile");
+  const [user, setUser] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [addressForm, setAddressForm] = useState(emptyAddress);
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    async function loadAccount() {
+      setLoading(true);
+      setError("");
+      try {
+        const [profileData, orderData] = await Promise.all([fetchAccountProfile(), fetchMyOrders()]);
+        if (!active) return;
+        setUser(profileData.user);
+        setOrders(orderData.orders || []);
+      } catch (err) {
+        if (!active) return;
+        setError(err.message || "Unable to load account details.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    loadAccount();
+    return () => { active = false; };
+  }, []);
+
+  const addresses = user?.addresses || [];
+  const profileStats = useMemo(() => [
+    { label: "Orders", value: orders.length },
+    { label: "Saved", value: wishlistItems.length },
+    { label: "Addresses", value: addresses.length },
+  ], [orders.length, wishlistItems.length, addresses.length]);
+
+  const showMessage = (text) => {
+    setMessage(text);
+    window.setTimeout(() => setMessage(""), 2800);
+  };
+
+  const handleProfileSave = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    const form = new FormData(event.currentTarget);
+    try {
+      const data = await updateAccountProfile({ name: form.get("name"), phone: form.get("phone") });
+      setUser(data.user);
+      showMessage("Profile updated successfully.");
+    } catch (err) {
+      setError(err.message || "Unable to update profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddressSubmit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const action = editingAddressId ? updateAccountAddress(editingAddressId, addressForm) : addAccountAddress(addressForm);
+      const data = await action;
+      setUser((current) => ({ ...current, addresses: data.addresses || [] }));
+      setAddressForm(emptyAddress);
+      setEditingAddressId(null);
+      showMessage(editingAddressId ? "Address updated successfully." : "Address added successfully.");
+    } catch (err) {
+      setError(err.message || "Unable to save address.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const editAddress = (address) => {
+    setEditingAddressId(address._id);
+    setAddressForm({ ...emptyAddress, ...address });
+  };
+
+  const removeAddress = async (id) => {
+    setSaving(true);
+    setError("");
+    try {
+      const data = await deleteAccountAddress(id);
+      setUser((current) => ({ ...current, addresses: data.addresses || [] }));
+      showMessage("Address deleted successfully.");
+    } catch (err) {
+      setError(err.message || "Unable to delete address.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const makeDefaultAddress = async (address) => {
+    setSaving(true);
+    setError("");
+    try {
+      const data = await updateAccountAddress(address._id, { ...address, isDefault: true });
+      setUser((current) => ({ ...current, addresses: data.addresses || [] }));
+      showMessage("Default address updated.");
+    } catch (err) {
+      setError(err.message || "Unable to set default address.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const password = form.get("password");
+    if (password !== form.get("confirmPassword")) {
+      setError("New password and confirm password must match.");
+      return;
+    }
+    if (String(password).length < 6) {
+      setError("New password must be at least 6 characters.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await changeAccountPassword({ currentPassword: form.get("currentPassword"), password });
+      await logout();
+      navigate("/login", { replace: true, state: { from: "/account" } });
+    } catch (err) {
+      setError(err.message || "Unable to change password.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
+  };
+
+  const updateAddressField = (field, value) => setAddressForm((current) => ({ ...current, [field]: value }));
+
+  return (
+    <>
+      <Breadcrumb items={[{ label: "My Account" }]} />
+      <section className="section-padding">
+        <Container>
+          <div className="mb-8 grid gap-5 rounded-[2rem] border border-ink/10 bg-white p-6 shadow-sm md:grid-cols-[auto_1fr] md:items-center">
+            <div className="grid h-20 w-20 place-items-center rounded-full bg-linen font-serif text-3xl font-semibold text-leaf">{initials(user?.name)}</div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-clay">Customer account</p>
+              <h1 className="mt-2 font-serif text-4xl font-semibold sm:text-5xl">My Account</h1>
+              <p className="mt-3 text-sm font-semibold text-ink/55">Manage your profile, orders, addresses, wishlist, and account security.</p>
+              <div className="mt-5 grid max-w-md grid-cols-3 gap-3">
+                {profileStats.map((item) => <div key={item.label} className="rounded-2xl bg-cream p-3 text-center"><p className="text-lg font-bold">{item.value}</p><p className="text-xs font-semibold text-ink/45">{item.label}</p></div>)}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+            <aside className="h-max rounded-[1.5rem] border border-ink/10 bg-white p-3 shadow-sm">
+              <select className="h-12 w-full rounded-xl border border-ink/10 bg-cream px-4 text-sm font-semibold lg:hidden" value={activeTab} onChange={(event) => setActiveTab(event.target.value)}>
+                {tabs.map((tab) => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
+              </select>
+              <nav className="hidden gap-2 lg:grid" aria-label="Account navigation">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return <button key={tab.id} type="button" onClick={() => tab.id === "logout" ? handleLogout() : setActiveTab(tab.id)} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition ${activeTab === tab.id ? "bg-ink text-white" : "text-ink/65 hover:bg-linen hover:text-ink"}`}><Icon size={18} />{tab.label}</button>;
+                })}
+              </nav>
+            </aside>
+
+            <div className="min-h-[420px] rounded-[1.5rem] border border-ink/10 bg-white p-5 shadow-sm sm:p-6 lg:p-8">
+              {loading && <div className="grid gap-4"><div className="h-8 w-52 animate-pulse rounded-full bg-linen" /><div className="h-28 animate-pulse rounded-2xl bg-linen" /><div className="h-28 animate-pulse rounded-2xl bg-linen" /></div>}
+              {!loading && error && <p className="rounded-2xl bg-linen p-4 text-sm font-semibold text-danger">{error}</p>}
+              {!loading && message && <p className="mb-5 rounded-2xl bg-leaf/10 p-4 text-sm font-semibold text-leaf">{message}</p>}
+
+              {!loading && activeTab === "profile" && user && (
+                <section>
+                  <h2 className="font-serif text-3xl font-semibold">My Profile</h2>
+                  <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_0.8fr]">
+                    <form onSubmit={handleProfileSave} className="grid gap-5">
+                      <Input label="Name" name="name" defaultValue={user.name || ""} required />
+                      <Input label="Email" name="email" value={user.email || ""} disabled />
+                      <Input label="Phone number" name="phone" defaultValue={user.phone || ""} />
+                      <Button type="submit" loading={saving} className="w-full sm:w-max">Save Profile</Button>
+                    </form>
+                    <div className="rounded-2xl bg-cream p-5">
+                      <div className="grid h-16 w-16 place-items-center rounded-full bg-white font-serif text-2xl font-semibold text-leaf shadow-sm">{initials(user.name)}</div>
+                      <p className="mt-4 font-semibold">{user.name}</p>
+                      <p className="mt-1 text-sm text-ink/55">{user.email}</p>
+                      <p className="mt-4 text-sm leading-6 text-ink/60">Only supported profile fields are editable here. Role and internal security fields are never exposed.</p>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {!loading && activeTab === "orders" && (
+                <section>
+                  <h2 className="font-serif text-3xl font-semibold">My Orders</h2>
+                  <div className="mt-6 grid gap-4">
+                    {orders.length === 0 && <div className="rounded-2xl bg-cream p-6 text-center"><Package className="mx-auto text-leaf" /><p className="mt-3 font-semibold">No orders yet</p><Button to="/shop" className="mt-5">Shop Oils</Button></div>}
+                    {orders.map((order) => <Link key={order._id} to={`/account/orders/${order._id}`} className="grid gap-4 rounded-2xl border border-ink/10 p-4 transition hover:border-leaf/40 hover:bg-cream sm:grid-cols-[1fr_auto]">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-clay">Order {order._id}</p>
+                        <p className="mt-2 text-sm font-semibold text-ink/50">{formatDate(order.createdAt)}</p>
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          {(order.products || []).slice(0, 3).map((item) => <div key={`${order._id}-${item.title}`} className="flex items-center gap-3"><SafeImage src={item.image} alt={item.title} className="h-14 w-14 rounded-xl object-cover" /><span className="max-w-[180px] text-sm font-semibold line-clamp-2">{item.title} x {item.quantity}</span></div>)}
+                        </div>
+                      </div>
+                      <div className="text-left sm:text-right"><p className="text-lg font-bold">{formatCurrency(order.totalAmount || 0)}</p><p className="mt-2 text-sm font-semibold text-leaf">{statusLabels[order.orderStatus] || order.orderStatus}</p><p className="mt-1 text-sm font-semibold text-ink/45">Payment: {statusLabels[order.paymentStatus] || order.paymentStatus}</p></div>
+                    </Link>)}
+                  </div>
+                </section>
+              )}
+
+              {!loading && activeTab === "addresses" && (
+                <section>
+                  <h2 className="font-serif text-3xl font-semibold">Saved Addresses</h2>
+                  <div className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+                    <form onSubmit={handleAddressSubmit} className="grid gap-4 rounded-2xl bg-cream p-4">
+                      <Input label="Label" value={addressForm.label} onChange={(event) => updateAddressField("label", event.target.value)} />
+                      <Input label="Full name" value={addressForm.fullName} onChange={(event) => updateAddressField("fullName", event.target.value)} required />
+                      <Input label="Phone" value={addressForm.phone} onChange={(event) => updateAddressField("phone", event.target.value)} required />
+                      <Input label="Street" value={addressForm.street} onChange={(event) => updateAddressField("street", event.target.value)} required />
+                      <div className="grid gap-4 sm:grid-cols-2"><Input label="City" value={addressForm.city} onChange={(event) => updateAddressField("city", event.target.value)} required /><Input label="State" value={addressForm.state} onChange={(event) => updateAddressField("state", event.target.value)} required /></div>
+                      <Input label="Postal code" value={addressForm.postalCode} onChange={(event) => updateAddressField("postalCode", event.target.value)} required />
+                      <label className="flex items-center gap-2 text-sm font-semibold text-ink/60"><input type="checkbox" checked={Boolean(addressForm.isDefault)} onChange={(event) => updateAddressField("isDefault", event.target.checked)} /> Set as default address</label>
+                      <div className="flex flex-col gap-3 sm:flex-row"><Button type="submit" loading={saving}>{editingAddressId ? "Update Address" : "Add Address"}</Button>{editingAddressId && <Button type="button" variant="secondary" onClick={() => { setEditingAddressId(null); setAddressForm(emptyAddress); }}>Cancel</Button>}</div>
+                    </form>
+                    <div className="grid gap-3">
+                      {addresses.length === 0 && <div className="rounded-2xl border border-ink/10 p-5 text-center"><Home className="mx-auto text-leaf" /><p className="mt-3 font-semibold">No saved addresses yet.</p></div>}
+                      {addresses.map((address) => <article key={address._id} className="rounded-2xl border border-ink/10 p-4">
+                        <div className="flex items-start justify-between gap-4"><div><p className="font-semibold">{address.label || "Address"} {address.isDefault && <span className="ml-2 rounded-full bg-leaf/10 px-2 py-1 text-xs text-leaf">Default</span>}</p><p className="mt-2 text-sm leading-6 text-ink/60">{address.fullName}, {address.phone}<br />{address.street}, {address.city}, {address.state} {address.postalCode}<br />{address.country || "India"}</p></div></div>
+                        <div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => editAddress(address)} className="rounded-full bg-linen px-4 py-2 text-xs font-bold text-ink transition hover:text-leaf">Edit</button><button type="button" onClick={() => removeAddress(address._id)} className="rounded-full bg-linen px-4 py-2 text-xs font-bold text-danger">Delete</button>{!address.isDefault && <button type="button" onClick={() => makeDefaultAddress(address)} className="rounded-full bg-linen px-4 py-2 text-xs font-bold text-ink transition hover:text-leaf">Make Default</button>}</div>
+                      </article>)}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {!loading && activeTab === "wishlist" && (
+                <section>
+                  <h2 className="font-serif text-3xl font-semibold">Wishlist</h2>
+                  <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {wishlistItems.length === 0 && <div className="rounded-2xl bg-cream p-6 text-center md:col-span-2 xl:col-span-3"><Heart className="mx-auto text-leaf" /><p className="mt-3 font-semibold">No saved products yet.</p><Button to="/shop" className="mt-5">Explore Products</Button></div>}
+                    {wishlistItems.map((product) => <article key={product.id} className="rounded-2xl border border-ink/10 p-4">
+                      <Link to={`/product/${product.slug}`} className="block"><SafeImage src={product.image} alt={product.name} className="aspect-[4/3] w-full rounded-xl object-cover" /><h3 className="mt-4 min-h-12 font-serif text-xl font-semibold leading-tight hover:text-leaf">{product.name}</h3></Link>
+                      <p className="mt-2 font-bold">{formatCurrency(product.price)}</p>
+                      <div className="mt-4 grid grid-cols-[1fr_auto] gap-2"><AddToCartButton product={product} className="h-11 rounded-full text-xs" /><WishlistToggle product={product} className="h-11 w-11" labelPrefix="Remove" /></div>
+                    </article>)}
+                  </div>
+                </section>
+              )}
+
+              {!loading && activeTab === "security" && (
+                <section>
+                  <h2 className="font-serif text-3xl font-semibold">Account & Security</h2>
+                  <form onSubmit={handlePasswordChange} className="mt-6 max-w-xl rounded-2xl bg-cream p-5">
+                    <div className="mb-5 flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-full bg-white text-leaf"><Lock size={18} /></span><div><p className="font-semibold">Change Password</p><p className="text-sm text-ink/50">You will be asked to log in again after changing your password.</p></div></div>
+                    <div className="grid gap-4"><Input label="Current password" name="currentPassword" type="password" required /><Input label="New password" name="password" type="password" required /><Input label="Confirm new password" name="confirmPassword" type="password" required /></div>
+                    <Button type="submit" loading={saving} className="mt-5">Update Password</Button>
+                  </form>
+                  <div className="mt-6 rounded-2xl border border-ink/10 p-5"><p className="font-semibold">Session</p><p className="mt-2 text-sm leading-6 text-ink/60">Active session details are not shown because the current backend stores a single refresh token, not a full session device history.</p><Button type="button" variant="secondary" className="mt-5" onClick={handleLogout}>Logout</Button></div>
+                </section>
+              )}
+
+              {!loading && activeTab === "logout" && (
+                <section className="grid place-items-center py-12 text-center">
+                  <LogOut className="text-leaf" size={32} />
+                  <h2 className="mt-4 font-serif text-3xl font-semibold">Ready to logout?</h2>
+                  <p className="mt-3 max-w-md text-ink/60">You can sign back in anytime to view your orders and saved pantry details.</p>
+                  <Button type="button" className="mt-6" onClick={handleLogout}>Logout</Button>
+                </section>
+              )}
+            </div>
+          </div>
+        </Container>
+      </section>
+    </>
+  );
+}
+

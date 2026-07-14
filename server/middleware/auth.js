@@ -20,3 +20,16 @@ export const protect = asyncHandler(async (req, res, next) => {
   req.user = user;
   next();
 });
+
+export const optionalProtect = asyncHandler(async (req, _res, next) => {
+  const bearer = req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.split(" ")[1] : null;
+  const token = bearer || req.cookies?.token;
+  if (!token) return next();
+  try {
+    const decoded = verifyToken(token);
+    req.user = await User.findById(decoded.id);
+  } catch {
+    req.user = null;
+  }
+  next();
+});

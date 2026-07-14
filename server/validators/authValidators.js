@@ -16,7 +16,6 @@ export const loginValidator = [
 export const updateProfileValidator = [
   body("name").optional().trim().notEmpty().withMessage("Name cannot be empty."),
   body("phone").optional().trim().isLength({ min: 7 }).withMessage("Phone number is too short."),
-  body("addresses").optional().isArray().withMessage("Addresses must be an array."),
 ];
 
 export const changePasswordValidator = [
@@ -38,3 +37,4 @@ export const addressValidator = [
 ];
 
 export const addressIdValidator = [param("addressId").isMongoId().withMessage("Valid address id is required.")];
+

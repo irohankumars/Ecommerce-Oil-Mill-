@@ -7,6 +7,7 @@ import About from "../pages/About.jsx";
 import Home from "../pages/Home.jsx";
 import StatusPage from "../pages/StatusPage.jsx";
 
+const Account = lazy(() => import("../pages/Account.jsx"));
 const Cart = lazy(() => import("../pages/Cart.jsx"));
 const Checkout = lazy(() => import("../pages/Checkout.jsx"));
 const Contact = lazy(() => import("../pages/Contact.jsx"));
@@ -14,6 +15,7 @@ const FAQ = lazy(() => import("../pages/FAQ.jsx"));
 const LegalPage = lazy(() => import("../pages/LegalPage.jsx"));
 const Login = lazy(() => import("../pages/Login.jsx"));
 const Signup = lazy(() => import("../pages/Signup.jsx"));
+const OrderDetails = lazy(() => import("../pages/OrderDetails.jsx"));
 const OrderSuccess = lazy(() => import("../pages/OrderSuccess.jsx"));
 const NotFound = lazy(() => import("../pages/NotFound.jsx"));
 const OurProcess = lazy(() => import("../pages/OurProcess.jsx"));
@@ -29,6 +31,8 @@ export default function AppRoutes() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/product/:slug" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+        <Route path="/account/orders/:id" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
         <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
         <Route path="/about" element={<About />} />
         <Route path="/about/faq" element={<FAQ />} />
@@ -57,6 +61,7 @@ export default function AppRoutes() {
     </Suspense>
   );
 }
+
 
 
 

@@ -5,12 +5,13 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button.jsx";
 import Container from "../components/ui/Container.jsx";
 import Input from "../components/ui/Input.jsx";
-import { loginAccount } from "../services/authService.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const emailRef = useRef(null);
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,8 +22,8 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await loginAccount({ email: form.get("email"), password: form.get("password") });
-      navigate(location.state?.from || "/", { replace: true });
+      await login({ email: form.get("email"), password: form.get("password") });
+      navigate(location.state?.from || "/account", { replace: true });
     } catch (err) {
       setError(err.message || "Unable to login. Please try again.");
     } finally {
@@ -48,5 +49,6 @@ export default function Login() {
     </section>
   );
 }
+
 
 

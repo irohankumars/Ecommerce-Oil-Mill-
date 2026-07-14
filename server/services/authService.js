@@ -44,15 +44,16 @@ export async function logoutUser(userId) {
 }
 
 export async function updateUserProfile(userId, payload) {
-  const allowed = ["name", "phone", "addresses"];
+  const allowed = ["name", "phone"];
   const updates = Object.fromEntries(Object.entries(payload).filter(([key]) => allowed.includes(key)));
   return User.findByIdAndUpdate(userId, updates, { new: true, runValidators: true });
 }
 
 export async function changeUserPassword(user, currentPassword, nextPassword) {
-  const account = await User.findById(user._id).select("+password");
+  const account = await User.findById(user._id).select("+password +refreshToken");
   if (!(await account.comparePassword(currentPassword))) throw new ApiError("Current password is incorrect.", 400);
   account.password = nextPassword;
+  account.refreshToken = undefined;
   await account.save();
   return true;
 }
@@ -89,8 +90,11 @@ export async function verifyEmail(token) {
 }
 
 export async function addAddress(userId, address) {
-  const user = await User.findByIdAndUpdate(userId, { $push: { addresses: address } }, { new: true, runValidators: true });
+  const user = await User.findById(userId);
   if (!user) throw new ApiError("User not found.", 404);
+  if (address.isDefault) user.addresses.forEach((item) => { item.isDefault = false; });
+  user.addresses.push(address);
+  await user.save();
   return user.addresses;
 }
 
@@ -98,6 +102,7 @@ export async function updateAddress(userId, addressId, address) {
   const user = await User.findById(userId);
   const existing = user?.addresses.id(addressId);
   if (!existing) throw new ApiError("Address not found.", 404);
+  if (address.isDefault) user.addresses.forEach((item) => { item.isDefault = item._id.toString() === addressId; });
   existing.set(address);
   await user.save();
   return user.addresses;
@@ -111,3 +116,5 @@ export async function deleteAddress(userId, addressId) {
   await user.save();
   return user.addresses;
 }
+
+
