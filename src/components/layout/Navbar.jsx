@@ -1,7 +1,7 @@
 ﻿// Renders the Navbar layout element.
 import { Heart, Menu, Search, ShoppingBag, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { usePopup } from "../../context/PopupContext.jsx";
 import { useCart } from "../../hooks/useCart.jsx";
@@ -49,13 +49,35 @@ function IconLink({ to, label, children, badge, className = "", onClick }) {
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const location = useLocation();
+  const navigate = useNavigate();
   const { items } = useCart();
   const { items: wishlistItems } = useWishlist();
-  const { authenticated } = useAuth();
+  const { authenticated, user } = useAuth();
   const { togglePopup } = usePopup();
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
   const accountPath = authenticated ? "/account" : "/login";
+  const isAdmin = user?.role === "admin";
 
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearchValue(params.get("q") || "");
+  }, [location.search]);
+
+  const navigateToShopSearch = (value = searchValue, replace = false) => {
+    const params = new URLSearchParams();
+    params.set("focus", "search");
+    if (value) params.set("q", value);
+    navigate(`/shop?${params.toString()}`, { replace });
+  };
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchValue(value);
+    navigateToShopSearch(value, location.pathname === "/shop");
+  };
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 8);
     handleScroll();
@@ -79,14 +101,21 @@ export default function Navbar() {
               >
                 Velora
               </Link>
-              <Link
-                to="/shop?focus=search"
-                aria-label="Search products"
-                className="hidden h-11 items-center gap-3 rounded-full bg-white px-5 text-sm font-semibold text-ink/70 shadow-sm transition duration-200 hover:scale-[1.02] hover:bg-linen focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf xl:inline-flex"
+              <form
+                role="search"
+                onSubmit={(event) => { event.preventDefault(); navigateToShopSearch(searchValue, location.pathname === "/shop"); }}
+                className="hidden h-11 min-w-0 items-center gap-3 rounded-full bg-white px-5 text-sm font-semibold text-ink/70 shadow-sm transition duration-200 hover:scale-[1.02] hover:bg-linen focus-within:outline-none focus-within:ring-2 focus-within:ring-leaf xl:inline-flex xl:w-[220px] 2xl:w-[260px]"
               >
-                <Search size={18} />
-                Search oils
-              </Link>
+                <Search size={18} className="shrink-0" />
+                <input
+                  value={searchValue}
+                  onFocus={() => navigateToShopSearch(searchValue, location.pathname === "/shop")}
+                  onChange={handleSearchChange}
+                  placeholder="Search oils"
+                  aria-label="Search products"
+                  className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink/70 placeholder:text-ink/50 outline-none"
+                />
+              </form>
             </div>
             <Link
               to="/"
@@ -98,9 +127,9 @@ export default function Navbar() {
               <IconLink label="Wishlist" badge={wishlistItems.length} className="hidden xl:grid" onClick={() => togglePopup("wishlist")}>
                 <Heart size={19} />
               </IconLink>
-              <IconLink to={accountPath} label="Account" className="hidden xl:grid">
+              <div className="hidden items-center gap-2 xl:flex"><IconLink to={accountPath} label="Account" className="grid">
                 <UserRound size={19} fill={authenticated ? "currentColor" : "none"} />
-              </IconLink>
+              </IconLink>{isAdmin && <span className="rounded-full bg-leaf/10 px-2.5 py-1 text-xs font-bold text-leaf">Admin</span>}</div>
               <IconLink
                 to="/cart"
                 label="Cart"
@@ -122,10 +151,12 @@ export default function Navbar() {
         </div>
         <DesktopMenu />
       </header>
-      <MobileDrawer open={open} onClose={() => setOpen(false)} onWishlist={() => togglePopup("wishlist")} accountPath={accountPath} authenticated={authenticated} />
+      <MobileDrawer open={open} onClose={() => setOpen(false)} onWishlist={() => togglePopup("wishlist")} accountPath={accountPath} authenticated={authenticated} isAdmin={isAdmin} />
     </>
   );
 }
+
+
 
 
 

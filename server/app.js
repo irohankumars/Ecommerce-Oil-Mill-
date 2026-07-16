@@ -13,7 +13,6 @@ import { assignRequestId, preventParameterPollution, sanitizeRequest } from "./m
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import adminApiRoutes from "./admin/routes/adminApiRoutes.js";
-import adminAuthRoutes from "./admin/routes/adminAuthRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
@@ -72,7 +71,6 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 150, standardHeaders: true,
 
 app.get("/api/health", (req, res) => res.status(200).json({ success: true, message: "API is healthy", data: { uptime: process.uptime() } }));
 app.use("/api/auth", authRoutes);
-app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin-panel", adminApiRoutes);
 app.use("/api/ai", aiRoutes);
@@ -92,6 +90,7 @@ app.use(notFound);
 app.use(errorHandler);
 
 export default app;
+
 
 
 

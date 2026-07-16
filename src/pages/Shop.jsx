@@ -18,7 +18,7 @@ export default function Shop() {
   const [search, setSearch] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const searchInputRef = useRef(null);
   const invalidSearch = search.trim().length === 1;
 
@@ -40,8 +40,23 @@ export default function Shop() {
   }, [categories, category, invalidSearch, page, search, sort]);
 
   useEffect(() => {
+    const nextSearch = searchParams.get("q") || "";
+    setSearch((current) => (current === nextSearch ? current : nextSearch));
+  }, [searchParams]);
+
+  useEffect(() => {
     if (searchParams.get("focus") === "search") window.setTimeout(() => searchInputRef.current?.focus(), 150);
   }, [searchParams]);
+
+  const updateSearch = (value) => {
+    setSearch(value);
+    setPage(1);
+    const nextParams = new URLSearchParams(searchParams);
+    if (value) nextParams.set("q", value);
+    else nextParams.delete("q");
+    nextParams.set("focus", "search");
+    setSearchParams(nextParams, { replace: true });
+  };
 
   const visible = useMemo(() => products.filter(() => !invalidSearch), [invalidSearch, products]);
   const totalPages = Math.max(1, page + (visible.length === perPage ? 1 : 0));
@@ -59,7 +74,7 @@ export default function Shop() {
         <Container>
           <SectionHeading eyebrow="Shop oils" title="Cold pressed staples for every kitchen" text="Filter by seed, compare flavor styles, and add your pantry favourites in a few calm clicks." />
           <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_180px_180px] lg:gap-4">
-            <Input inputRef={searchInputRef} placeholder="Search oils, tags, or use cases" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} aria-label="Search products" className="h-11 text-xs sm:h-[52px] sm:text-sm" />
+            <Input inputRef={searchInputRef} placeholder="Search oils" value={search} onChange={(event) => updateSearch(event.target.value)} aria-label="Search products" className="h-11 text-xs sm:h-[52px] sm:text-sm" />
             <select value={category} onChange={(event) => changeCategory(event.target.value)} className="h-11 min-w-0 rounded-xl border border-ink/10 bg-white px-3 text-sm font-semibold outline-none sm:h-[52px] sm:px-4">
               {categories.map((item) => <option key={item.id || item.name}>{item.name}</option>)}
             </select>
@@ -86,3 +101,4 @@ export default function Shop() {
     </>
   );
 }
+

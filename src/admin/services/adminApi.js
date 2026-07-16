@@ -2,13 +2,6 @@
 import { apiRequest } from "../../api/apiClient.js";
 
 const base = "/admin-panel";
-const authBase = "/admin/auth";
-export const adminAuthApi = {
-  login: (payload) => apiRequest(`${authBase}/login`, { method: "POST", body: JSON.stringify(payload) }),
-  profile: () => apiRequest(`${authBase}/profile`),
-  logout: () => apiRequest(`${authBase}/logout`, { method: "POST" }),
-};
-
 export const adminApi = {
   search: (q) => apiRequest(`${base}/search?q=${encodeURIComponent(q)}`),
   dashboard: () => apiRequest(`${base}/dashboard`),
@@ -51,5 +44,6 @@ export const adminApi = {
   settings: () => apiRequest(`${base}/settings`),
   saveSettings: (payload) => apiRequest(`${base}/settings`, { method: "PUT", body: JSON.stringify(payload) }),
 };
+
 
 

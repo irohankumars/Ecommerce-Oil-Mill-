@@ -38,18 +38,21 @@ export async function dashboardData() {
   const start = new Date(); start.setHours(0, 0, 0, 0);
   const end = new Date(start); end.setDate(end.getDate() + 1);
   const validRevenue = { createdAt: { $gte: start, $lt: end }, $or: [{ paymentStatus: "paid" }, { paymentMethod: "cod", orderStatus: { $ne: "cancelled" } }] };
-  const [todayOrders, revenueAgg, pendingOrders, readyToShip, lowStock, totalCustomers, recentOrders, failedPayments, sales] = await Promise.all([
+  const [todayOrders, revenueAgg, pendingOrders, readyToShip, lowStock, totalCustomers, totalOrders, products, totalRevenueAgg, recentOrders, failedPayments, sales] = await Promise.all([
     Order.countDocuments({ createdAt: { $gte: start, $lt: end } }),
     Order.aggregate([{ $match: validRevenue }, { $group: { _id: null, total: { $sum: "$totalAmount" } } }]),
     Order.countDocuments({ orderStatus: "placed" }),
     Order.countDocuments({ shippingStatus: { $in: ["ready_for_pickup", "awb_assigned", "pickup_generated"] } }),
     Product.countDocuments({ stock: { $lte: settings.lowStockThreshold }, isArchived: { $ne: true } }),
     User.countDocuments({ role: "user" }),
+    Order.countDocuments(),
+    Product.countDocuments({ isArchived: { $ne: true } }),
+    Order.aggregate([{ $match: { $or: [{ paymentStatus: "paid" }, { paymentMethod: "cod", orderStatus: { $ne: "cancelled" } }] } }, { $group: { _id: null, total: { $sum: "$totalAmount" } } }]),
     Order.find().populate("user", "name email").sort({ createdAt: -1 }).limit(8),
     Order.countDocuments({ paymentStatus: "failed" }),
     Order.aggregate([{ $match: { createdAt: { $gte: new Date(Date.now() - 7 * 86400000) }, paymentStatus: { $in: ["paid"] } } }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, total: { $sum: "$totalAmount" }, orders: { $sum: 1 } } }, { $sort: { _id: 1 } }]),
   ]);
-  return { summary: { todayOrders, todayRevenue: revenueAgg[0]?.total || 0, pendingOrders, readyToShip, lowStock, totalCustomers }, recentOrders, needsAttention: { waitingConfirmation: pendingOrders, readyToShip, lowStock, failedPayments }, sales };
+  return { summary: { todayOrders, todayRevenue: revenueAgg[0]?.total || 0, pendingOrders, readyToShip, lowStock, totalCustomers, totalOrders, products, totalRevenue: totalRevenueAgg[0]?.total || 0 }, recentOrders, needsAttention: { waitingConfirmation: pendingOrders, readyToShip, lowStock, failedPayments }, sales };
 }
 
 export async function listOrders(query) {
@@ -210,3 +213,5 @@ export async function globalAdminSearch(term, user, hasPermission) {
   ]);
   return { pages, products, categories, orders, customers };
 }
+
+

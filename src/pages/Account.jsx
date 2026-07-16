@@ -1,5 +1,5 @@
 ﻿// Renders the authenticated My Account customer dashboard.
-import { Heart, Home, Lock, LogOut, MapPin, Package, ShieldCheck, UserRound } from "lucide-react";
+import { BarChart3, Boxes, Heart, Home, Lock, LogOut, MapPin, Package, ShieldCheck, ShoppingBag, Tags, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Breadcrumb from "../components/common/Breadcrumb.jsx";
@@ -14,6 +14,7 @@ import { addAccountAddress, changeAccountPassword, deleteAccountAddress, fetchAc
 import { useAuth } from "../context/AuthContext.jsx";
 import { fetchMyOrders } from "../services/orderService.js";
 import { formatCurrency } from "../utils/formatCurrency.js";
+import { adminApi } from "../admin/services/adminApi.js";
 
 const tabs = [
   { id: "profile", label: "My Profile", icon: UserRound },
@@ -76,6 +77,7 @@ export default function Account() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [adminStats, setAdminStats] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -98,6 +100,7 @@ export default function Account() {
     return () => { active = false; };
   }, []);
 
+  const isAdmin = user?.role === "admin";
   const addresses = user?.addresses || [];
   const profileStats = useMemo(() => [
     { label: "Orders", value: orders.length },
@@ -226,6 +229,36 @@ export default function Account() {
             </div>
           </div>
 
+          {isAdmin && <section className="mb-8 rounded-[2rem] border border-leaf/20 bg-white p-6 shadow-sm">
+            <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-start">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-clay">Administrator</p>
+                <h2 className="mt-2 font-serif text-4xl font-semibold">Administrator</h2>
+                <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-2xl bg-cream p-4"><p className="text-ink/45">Role</p><p className="mt-1 font-bold">{user.adminRole || "OWNER"}</p></div>
+                  <div className="rounded-2xl bg-cream p-4"><p className="text-ink/45">Admin Email</p><p className="mt-1 break-all font-bold">{user.email}</p></div>
+                  <div className="rounded-2xl bg-cream p-4"><p className="text-ink/45">Last Login</p><p className="mt-1 font-bold">{user.lastLogin ? formatDate(user.lastLogin) : "Not available"}</p></div>
+                  <div className="rounded-2xl bg-cream p-4"><p className="text-ink/45">Account Status</p><p className="mt-1 font-bold text-leaf">Active</p></div>
+                </div>
+              </div>
+              <Button to="/admin" className="h-12 px-8">Open Admin Panel</Button>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <AdminMetric label="Total Orders" value={adminStats?.summary?.totalOrders ?? adminStats?.summary?.todayOrders} />
+              <AdminMetric label="Pending Orders" value={adminStats?.summary?.pendingOrders} />
+              <AdminMetric label="Products" value={adminStats?.summary?.products} />
+              <AdminMetric label="Customers" value={adminStats?.summary?.totalCustomers} />
+              <AdminMetric label="Revenue" value={adminStats?.summary?.totalRevenue != null ? formatCurrency(adminStats.summary.totalRevenue) : undefined} />
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[{ label: "Orders", to: "/admin/orders", icon: Package }, { label: "Products", to: "/admin/products", icon: ShoppingBag }, { label: "Inventory", to: "/admin/inventory", icon: Boxes }, { label: "Categories", to: "/admin/categories", icon: Tags }, { label: "Offers", to: "/admin/offers", icon: Tags }, { label: "Coupons", to: "/admin/coupons", icon: Tags }, { label: "Customers", to: "/admin/customers", icon: UserRound }, { label: "Reports", to: "/admin/reports", icon: BarChart3 }, { label: "Settings", to: "/admin/settings", icon: ShieldCheck }].map((item) => { const Icon = item.icon; return <Link key={item.to} to={item.to} className="inline-flex items-center gap-2 rounded-full bg-linen px-4 py-2 text-sm font-bold text-ink transition hover:text-leaf"><Icon size={15} />{item.label}</Link>; })}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-ink/10 pt-4">
+              <Link to="/" className="rounded-full border border-ink/10 px-4 py-2 text-sm font-bold transition hover:border-leaf hover:text-leaf">View Store Homepage</Link>
+              <Link to="/shop" className="rounded-full border border-ink/10 px-4 py-2 text-sm font-bold transition hover:border-leaf hover:text-leaf">Go to Shop</Link>
+              <button type="button" onClick={() => setActiveTab("orders")} className="rounded-full border border-ink/10 px-4 py-2 text-sm font-bold transition hover:border-leaf hover:text-leaf">View Recent Orders</button>
+            </div>
+          </section>}
           <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
             <aside className="h-max rounded-[1.5rem] border border-ink/10 bg-white p-3 shadow-sm">
               <select className="h-12 w-full rounded-xl border border-ink/10 bg-cream px-4 text-sm font-semibold lg:hidden" value={activeTab} onChange={(event) => setActiveTab(event.target.value)}>
@@ -354,3 +387,9 @@ export default function Account() {
 
 
 
+
+
+
+function AdminMetric({ label, value }) {
+  return <div className="rounded-2xl bg-cream p-4"><p className="text-xs font-bold uppercase tracking-[0.12em] text-ink/40">{label}</p><p className="mt-2 text-lg font-bold">{value ?? <span className="inline-block h-5 w-16 animate-pulse rounded bg-ink/10" />}</p></div>;
+}
