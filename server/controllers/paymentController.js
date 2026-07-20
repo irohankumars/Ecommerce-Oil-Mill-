@@ -1,7 +1,7 @@
-﻿// Payment controller handles Razorpay-compatible payment operations.
+// Payment controller handles Razorpay-compatible payment operations.
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { sendSuccess } from "../utils/apiResponse.js";
-import { createPaymentOrder, createUpiQrCheckout, markOrderPayment, verifyPaymentAndCreateOrder, verifyUpiQrCheckout } from "../services/paymentService.js";
+import { createPaymentOrder, createUpiQrCheckout, markOrderPayment, processRazorpayWebhook, verifyPaymentAndCreateOrder, verifyUpiQrCheckout } from "../services/paymentService.js";
 
 export const createPaymentIntent = asyncHandler(async (req, res) => {
   const payment = await createPaymentOrder(req.body);
@@ -26,4 +26,9 @@ export const createUpiQrPayment = asyncHandler(async (req, res) => {
 export const checkUpiQrPayment = asyncHandler(async (req, res) => {
   const result = await verifyUpiQrCheckout(req.user._id, req.params.checkoutId);
   sendSuccess(res, 200, "UPI QR status fetched successfully", result);
+});
+
+export const razorpayWebhook = asyncHandler(async (req, res) => {
+  const result = await processRazorpayWebhook(req.body, req.get("X-Razorpay-Signature"));
+  sendSuccess(res, 200, "Webhook processed", result);
 });

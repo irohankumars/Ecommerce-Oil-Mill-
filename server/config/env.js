@@ -23,9 +23,17 @@ export const env = {
   turnstile: {
     secretKey: process.env.TURNSTILE_SECRET_KEY || "",
   },
+  email: {
+    provider: process.env.EMAIL_PROVIDER || "resend",
+    from: process.env.EMAIL_FROM || "",
+    replyTo: process.env.EMAIL_REPLY_TO || "",
+    contactTo: process.env.CONTACT_TO_EMAIL || "",
+    resendApiKey: process.env.RESEND_API_KEY || "",
+  },
   razorpay: {
     keyId: process.env.RAZORPAY_KEY_ID || "",
     keySecret: process.env.RAZORPAY_KEY_SECRET || "",
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || "",
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_NAME || "",
@@ -55,3 +63,20 @@ if (isProduction && process.env.SHIPROCKET_MOCK === "true") {
 }
 
 
+
+if (isProduction) {
+  const required = [
+    ["MONGO_URI", env.mongoUri],
+    ["CLIENT_URL", env.clientUrl],
+    ["RAZORPAY_KEY_ID", env.razorpay.keyId],
+    ["RAZORPAY_KEY_SECRET", env.razorpay.keySecret],
+    ["CLOUDINARY_NAME", env.cloudinary.cloudName],
+    ["CLOUDINARY_KEY", env.cloudinary.apiKey],
+    ["CLOUDINARY_SECRET", env.cloudinary.apiSecret],
+    ["EMAIL_FROM", env.email.from],
+    ["CONTACT_TO_EMAIL", env.email.contactTo],
+    ["RESEND_API_KEY", env.email.resendApiKey],
+  ];
+  const missing = required.filter(([, value]) => !value).map(([key]) => key);
+  if (missing.length) throw new Error(`Missing production environment variables: ${missing.join(", ")}`);
+}

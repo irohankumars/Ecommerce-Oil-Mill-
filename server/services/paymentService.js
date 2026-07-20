@@ -155,3 +155,37 @@ export async function verifyUpiQrCheckout(userId, checkoutId) {
 
 
 
+
+export async function processRazorpayWebhook(rawBody, signature) {
+  if (!env.razorpay.webhookSecret) throw new ApiError("Razorpay webhook secret is not configured.", 500);
+  if (!signature) throw new ApiError("Razorpay webhook signature is required.", 400);
+  const expected = crypto.createHmac("sha256", env.razorpay.webhookSecret).update(rawBody).digest("hex");
+  const received = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (received.length !== expectedBuffer.length || !crypto.timingSafeEqual(expectedBuffer, received)) throw new ApiError("Invalid Razorpay webhook signature.", 400);
+  const event = JSON.parse(rawBody.toString("utf8"));
+  const payment = event.payload?.payment?.entity;
+  if (!payment?.id) return { processed: false, event: event.event };
+  if (event.event === "payment.failed") {
+    await createAdminNotification({ category: "payments", type: "payment_failed", title: "Payment Failed", description: `Razorpay payment ${payment.id} failed.`, related: { kind: "Payment", id: payment.id, label: payment.id, path: "/admin/payments" } });
+    return { processed: true, status: "failed" };
+  }
+  if (!["payment.captured", "payment.authorized"].includes(event.event)) return { processed: false, event: event.event };
+  const existingOrder = await Order.findOne({ $or: [{ razorpayPaymentId: payment.id }, { razorpayOrderId: payment.order_id }] });
+  if (existingOrder) {
+    existingOrder.paymentStatus = payment.status === "captured" ? "paid" : existingOrder.paymentStatus;
+    existingOrder.razorpayPaymentId = existingOrder.razorpayPaymentId || payment.id;
+    await existingOrder.save();
+    return { processed: true, order: existingOrder, status: existingOrder.paymentStatus };
+  }
+  const checkout = await PaymentCheckout.findOne({ $or: [{ razorpayPaymentId: payment.id }, { razorpayQrId: payment.qr_code_id }] });
+  if (checkout?.orderPayload && checkout.status !== "paid" && Number(payment.amount) === checkout.amount && payment.status === "captured") {
+    const order = await createStoreOrder(checkout.user, { ...checkout.orderPayload, paymentMethod: "razorpay", paymentStatus: "paid", razorpayPaymentId: payment.id, razorpayOrderId: payment.order_id });
+    checkout.status = "paid";
+    checkout.razorpayPaymentId = payment.id;
+    checkout.order = order._id;
+    await checkout.save();
+    return { processed: true, order, status: "paid" };
+  }
+  return { processed: true, status: payment.status };
+}

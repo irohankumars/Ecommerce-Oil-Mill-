@@ -5,7 +5,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { signRefreshToken, signToken, verifyToken } from "../utils/jwt.js";
 import { assertAdminSessionCapacity, attachRefreshToken, createAdminSession } from "./adminSessionService.js";
 import { createAdminNotification } from "./adminNotificationService.js";
-import { sendNewDeviceEmail, sendPasswordResetEmail, sendVerificationEmail } from "./emailService.js";
+import { sendNewDeviceEmail, sendPasswordResetEmail, sendVerificationEmail, sendWelcomeEmail } from "./emailService.js";
 import { verifyGoogleIdToken } from "./oauthService.js";
 import { verifyTurnstile } from "./turnstileService.js";
 import {
@@ -77,6 +77,7 @@ export async function registerUser(payload, req) {
   }
   await user.save();
   await createAdminNotification({ category: "customers", type: "new_user_registration", title: "New User Registration", description: `${user.name} created an account.`, related: { kind: "User", id: user._id, label: user.email, path: "/admin/customers" } });
+  await sendWelcomeEmail(user);
   const issued = await issueSession(user, undefined, req, true);
   return issued;
 }

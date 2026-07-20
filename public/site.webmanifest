@@ -1,0 +1,10 @@
+{
+  "name": "Velora Oils",
+  "short_name": "Velora",
+  "description": "Premium cold pressed edible oils for thoughtful kitchens.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f0e3",
+  "theme_color": "#55712f",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

@@ -9,6 +9,7 @@ import morgan from "morgan";
 import { cspConnectSources, corsOrigin } from "./config/cors.js";
 import { env } from "./config/env.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { csrfGuard } from "./middleware/csrf.js";
 import { notFound } from "./middleware/notFound.js";
 import { assignRequestId, preventParameterPollution, sanitizeRequest } from "./middleware/security.js";
 import { restrictionGuard } from "./middleware/restrictionGuard.js";
@@ -27,6 +28,7 @@ import securityRoutes from "./routes/securityRoutes.js";
 import shiprocketRoutes from "./routes/shiprocketRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
+import { razorpayWebhook } from "./controllers/paymentController.js";
 
 const app = express();
 
