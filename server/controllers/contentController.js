@@ -17,8 +17,13 @@ export const submitContact = asyncHandler(async (req, res) => {
   await verifyTurnstile(req.body.turnstileToken, req);
   const message = await ContactMessage.create({ name: req.body.name, email: req.body.email, phone: req.body.phone, subject: req.body.subject, message: req.body.message });
   await createAdminNotification({ category: "customers", type: "contact_form_submission", title: "Contact Form Submission", description: `${message.name} sent a message.`, related: { kind: "ContactMessage", id: message._id, label: message.email, path: "/admin/messages" } });
-  await sendContactFormEmail(message);
-  sendSuccess(res, 201, "Message received successfully", { message });
+  let emailDelivery = { sent: true };
+  try {
+    await sendContactFormEmail(message);
+  } catch (error) {
+    emailDelivery = { sent: false, reason: "EMAIL_PROVIDER_UNAVAILABLE" };
+  }
+  sendSuccess(res, 201, "Message received successfully", { message, emailDelivery });
 });
 
 export const subscribeNewsletter = asyncHandler(async (req, res) => {

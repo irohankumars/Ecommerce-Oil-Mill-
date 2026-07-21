@@ -8,6 +8,8 @@ import { useCart } from "../../hooks/useCart.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
 import DesktopMenu from "./DesktopMenu.jsx";
 import MobileDrawer from "./MobileDrawer.jsx";
+import basavannaLogo from "/basavanna.webp";
+import companyLogo from "/logo.webp";
 
 function IconLink({ to, label, children, badge, className = "", onClick }) {
   const content = (
@@ -102,21 +104,35 @@ export default function Navbar() {
               </Link>
               <form
                 role="search"
-                onSubmit={(event) => { event.preventDefault(); navigateToShopSearch(searchValue, location.pathname === "/shop"); }}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  navigateToShopSearch(
+                    searchValue,
+                    location.pathname === "/shop",
+                  );
+                }}
                 className="hidden h-11 min-w-0 items-center gap-3 rounded-full bg-white px-5 text-sm font-semibold text-ink/70 shadow-sm transition duration-200 hover:scale-[1.02] hover:bg-linen focus-within:outline-none focus-within:ring-2 focus-within:ring-leaf xl:inline-flex xl:w-[220px] 2xl:w-[260px]"
               >
                 <Search size={18} className="shrink-0" />
                 <input
                   value={searchValue}
-                  onFocus={() => navigateToShopSearch(searchValue, location.pathname === "/shop")}
+                  onFocus={() =>
+                    navigateToShopSearch(
+                      searchValue,
+                      location.pathname === "/shop",
+                    )
+                  }
                   onChange={handleSearchChange}
                   placeholder="Search oils"
                   aria-label="Search products"
                   className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink/70 placeholder:text-ink/50 outline-none"
                 />
               </form>
-              {/* <!-- Company Logo Placeholder --> */}
-              <div aria-label="Company logo placeholder" className="ml-3 hidden h-10 w-10 shrink-0 rounded-full border border-ink/10 bg-white/70 xl:block" />
+              <img
+                src={companyLogo}
+                alt="Logo"
+                className="ml-3 hidden h-16 w-16 shrink-0 rounded-full object-cover bg-white p-1 shadow-md ring-1 ring-amber-200 xl:block"
+              />
             </div>
             <Link
               to="/"
@@ -125,14 +141,32 @@ export default function Navbar() {
               SS Oil Mill
             </Link>
             <div className="flex items-center justify-end gap-3">
-              {/* <!-- Company Logo Placeholder --> */}
-              <div aria-label="Company logo placeholder" className="hidden h-10 w-10 shrink-0 rounded-full border border-ink/10 bg-white/70 xl:block" />
-              <IconLink label="Wishlist" badge={wishlistItems.length} className="hidden xl:grid" onClick={() => togglePopup("wishlist")}>
+              <img
+                src={basavannaLogo}
+                alt="Basavanna"
+                className="ml-3 hidden h-16 w-16 shrink-0 rounded-full object-cover bg-white p-1 shadow-md ring-1 ring-amber-200 xl:block"
+              />
+              <IconLink
+                label="Wishlist"
+                badge={wishlistItems.length}
+                className="hidden xl:grid"
+                onClick={() => togglePopup("wishlist")}
+              >
                 <Heart size={19} />
               </IconLink>
-              <div className="hidden items-center gap-2 xl:flex"><IconLink to={accountPath} label="Account" className="grid">
-                <UserRound size={19} fill={authenticated ? "currentColor" : "none"} />
-              </IconLink>{isAdmin && <span className="rounded-full bg-leaf/10 px-2.5 py-1 text-xs font-bold text-leaf">Admin</span>}</div>
+              <div className="hidden items-center gap-2 xl:flex">
+                <IconLink to={accountPath} label="Account" className="grid">
+                  <UserRound
+                    size={19}
+                    fill={authenticated ? "currentColor" : "none"}
+                  />
+                </IconLink>
+                {isAdmin && (
+                  <span className="rounded-full bg-leaf/10 px-2.5 py-1 text-xs font-bold text-leaf">
+                    Admin
+                  </span>
+                )}
+              </div>
               <IconLink
                 to="/cart"
                 label="Cart"
@@ -154,7 +188,14 @@ export default function Navbar() {
         </div>
         <DesktopMenu />
       </header>
-      <MobileDrawer open={open} onClose={() => setOpen(false)} onWishlist={() => togglePopup("wishlist")} accountPath={accountPath} authenticated={authenticated} isAdmin={isAdmin} />
+      <MobileDrawer
+        open={open}
+        onClose={() => setOpen(false)}
+        onWishlist={() => togglePopup("wishlist")}
+        accountPath={accountPath}
+        authenticated={authenticated}
+        isAdmin={isAdmin}
+      />
     </>
   );
 }
