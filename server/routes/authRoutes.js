@@ -48,7 +48,11 @@ const sensitiveLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 8, standar
 
 router.post("/register", authLimiter, registerValidator, validate, register);
 router.post("/login", authLimiter, loginValidator, validate, login);
-router.post("/google", authLimiter, googleValidator, validate, google);
+router.post("/google", authLimiter, (req, _res, next) => {
+  // DEBUG: Remove after Google OAuth issue is resolved
+  console.log("[Google OAuth Debug] POST /api/auth/google received", { bodyKeys: Object.keys(req.body || {}), credentialReceived: Boolean(req.body?.credential || req.body?.idToken) });
+  next();
+}, googleValidator, validate, google);
 router.post("/admin-login/continue", authLimiter, continueAdminLoginValidator, validate, continueAdminLogin);
 router.post("/refresh", authLimiter, refreshValidator, validate, refresh);
 router.post("/logout", protect, logout);

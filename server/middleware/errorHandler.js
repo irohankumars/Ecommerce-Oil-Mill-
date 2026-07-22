@@ -1,4 +1,4 @@
-﻿// Centralized error response middleware.
+// Centralized error response middleware.
 import { sendError } from "../utils/apiResponse.js";
 
 export function errorHandler(error, req, res, next) {
@@ -25,6 +25,23 @@ export function errorHandler(error, req, res, next) {
   if (error.name === "TokenExpiredError") {
     statusCode = 401;
     message = "Authentication token expired.";
+  }
+
+  // DEBUG: Remove after Google OAuth issue is resolved
+  console.error("[Express Error Debug]", { name: error.name, message: error.message, stack: error.stack, statusCode, route: req.originalUrl });
+  if (error.isOperational) {
+    // DEBUG: Remove after Google OAuth issue is resolved
+    console.error("[Express Error Debug] ApiError", { status: statusCode, message, errors });
+  }
+
+  if (req.originalUrl === "/api/auth/google") {
+    return res.status(statusCode).json({
+      success: false,
+      stage: error.debugStage || "controller",
+      error: message,
+      details: error.debugDetails || message,
+      errors,
+    });
   }
 
   if (process.env.NODE_ENV !== "production" && statusCode >= 500) {

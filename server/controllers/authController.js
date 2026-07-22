@@ -58,9 +58,20 @@ export const login = asyncHandler(async (req, res) => {
 });
 
 export const google = asyncHandler(async (req, res) => {
-  const { user, token, refreshToken } = await googleLogin(req.body.credential || req.body.idToken, req, req.body.remember !== false);
-  setSession(res, token, refreshToken);
-  sendSuccess(res, 200, "Google login successful", { user, token, refreshToken });
+  // DEBUG: Remove after Google OAuth issue is resolved
+  console.log("[Google OAuth Debug] controller:start", { bodyKeys: Object.keys(req.body || {}), credentialReceived: Boolean(req.body.credential || req.body.idToken) });
+  try {
+    const { user, token, refreshToken } = await googleLogin(req.body.credential || req.body.idToken, req, req.body.remember !== false);
+    // DEBUG: Remove after Google OAuth issue is resolved
+    console.log("[Google OAuth Debug] controller:success", { userIdPresent: Boolean(user?._id), tokenCreated: Boolean(token), refreshTokenCreated: Boolean(refreshToken) });
+    setSession(res, token, refreshToken);
+    sendSuccess(res, 200, "Google login successful", { user, token, refreshToken });
+  } catch (error) {
+    // DEBUG: Remove after Google OAuth issue is resolved
+    console.error("[Google OAuth Debug] controller:error", { name: error.name, message: error.message, stage: error.debugStage, details: error.debugDetails, stack: error.stack });
+    error.debugStage = error.debugStage || "controller";
+    throw error;
+  }
 });
 
 export const continueAdminLogin = asyncHandler(async (req, res) => {

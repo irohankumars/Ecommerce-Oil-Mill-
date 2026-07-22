@@ -120,22 +120,62 @@ export async function loginUser(email, password, req, options = {}) {
 }
 
 export async function googleLogin(idToken, req, remember = true) {
-  const profile = await verifyGoogleIdToken(idToken);
-  let user = await User.findOne({ email: profile.email }).select("+oauthProviders.providerId +sessions.refreshTokenHash");
-  if (!user) {
-    user = new User({ name: profile.name, email: profile.email, emailVerified: profile.emailVerified, oauthProviders: [{ provider: "google", providerId: profile.providerId, email: profile.email }] });
-  } else if (!(user.oauthProviders || []).some((item) => item.provider === "google")) {
-    user.oauthProviders.push({ provider: "google", providerId: profile.providerId, email: profile.email });
-    if (profile.emailVerified) user.emailVerified = true;
+  // DEBUG: Remove after Google OAuth issue is resolved
+  console.log("[Google OAuth Debug] googleLogin:start", { credentialReceived: Boolean(idToken), remember: Boolean(remember) });
+  let profile;
+  try {
+    profile = await verifyGoogleIdToken(idToken);
+  } catch (error) {
+    // DEBUG: Remove after Google OAuth issue is resolved
+    console.error("[Google OAuth Debug] googleLogin:verify_failed", { name: error.name, message: error.message, stage: error.debugStage, details: error.debugDetails });
+    error.debugStage = error.debugStage || "googleLogin";
+    throw error;
   }
-  if (user.isDisabled) throw new ApiError("This account is disabled.", 403);
-  if (req && !isKnownDevice(user, req)) {
-    trustDevice(user, req);
-    await sendNewDeviceEmail(user, getDeviceDetails(req));
+  // DEBUG: Remove after Google OAuth issue is resolved
+  console.log("[Google OAuth Debug] googleLogin:profile", { emailPresent: Boolean(profile.email), emailVerified: Boolean(profile.emailVerified), providerIdPresent: Boolean(profile.providerId) });
+  let user;
+  try {
+    user = await User.findOne({ email: profile.email }).select("+oauthProviders.providerId +sessions.refreshTokenHash");
+    // DEBUG: Remove after Google OAuth issue is resolved
+    console.log("[Google OAuth Debug] googleLogin:database_lookup", { userFound: Boolean(user) });
+    if (!user) {
+      user = new User({ name: profile.name, email: profile.email, emailVerified: profile.emailVerified, oauthProviders: [{ provider: "google", providerId: profile.providerId, email: profile.email }] });
+      // DEBUG: Remove after Google OAuth issue is resolved
+      console.log("[Google OAuth Debug] googleLogin:validation", { decision: "create_new_user" });
+    } else if (!(user.oauthProviders || []).some((item) => item.provider === "google")) {
+      user.oauthProviders.push({ provider: "google", providerId: profile.providerId, email: profile.email });
+      if (profile.emailVerified) user.emailVerified = true;
+      // DEBUG: Remove after Google OAuth issue is resolved
+      console.log("[Google OAuth Debug] googleLogin:validation", { decision: "link_google_provider" });
+    }
+    if (user.isDisabled) throw new ApiError("This account is disabled.", 403);
+    if (req && !isKnownDevice(user, req)) {
+      trustDevice(user, req);
+      await sendNewDeviceEmail(user, getDeviceDetails(req));
+    }
+    if (req) pushLoginHistory(user, req, "google_login");
+    await user.save({ validateBeforeSave: false });
+    // DEBUG: Remove after Google OAuth issue is resolved
+    console.log("[Google OAuth Debug] googleLogin:database_save_complete", { userIdPresent: Boolean(user._id) });
+  } catch (error) {
+    // DEBUG: Remove after Google OAuth issue is resolved
+    console.error("[Google OAuth Debug] googleLogin:database_or_email_failed", { name: error.name, message: error.message, stack: error.stack });
+    error.debugStage = error.debugStage || "database";
+    error.debugDetails = error.debugDetails || error.message;
+    throw error;
   }
-  if (req) pushLoginHistory(user, req, "google_login");
-  await user.save({ validateBeforeSave: false });
-  return issueSession(user, undefined, req, remember);
+  try {
+    const session = await issueSession(user, undefined, req, remember);
+    // DEBUG: Remove after Google OAuth issue is resolved
+    console.log("[Google OAuth Debug] googleLogin:jwt_session_success", { userIdPresent: Boolean(user._id) });
+    return session;
+  } catch (error) {
+    // DEBUG: Remove after Google OAuth issue is resolved
+    console.error("[Google OAuth Debug] googleLogin:jwt_session_failed", { name: error.name, message: error.message, stack: error.stack });
+    error.debugStage = error.debugStage || "jwt";
+    error.debugDetails = error.debugDetails || error.message;
+    throw error;
+  }
 }
 
 export async function refreshUserSession(refreshToken, req) {
