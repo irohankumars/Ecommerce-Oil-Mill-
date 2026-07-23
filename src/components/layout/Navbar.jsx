@@ -1,5 +1,5 @@
 // Renders the Navbar layout element.
-import { Heart, LogOut, Menu, Search, ShoppingBag, UserRound } from "lucide-react";
+import { Heart, Menu, Search, ShoppingBag, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -100,13 +100,14 @@ export default function Navbar() {
         }`}
       >
         <div className="border-b border-ink/10">
-          <div className="mx-auto flex h-[52px] max-w-screen-2xl items-center justify-between px-4 sm:px-6 md:h-20 lg:px-8 xl:grid xl:h-[88px] xl:grid-cols-[1fr_auto_1fr] xl:px-10 2xl:px-12">
+          <div className="mx-auto grid h-[52px] max-w-screen-2xl grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 md:h-20 lg:px-8 xl:grid-cols-[1fr_auto_1fr] xl:h-[88px] xl:px-10 2xl:px-12">
             <div className="flex items-center justify-start">
-              <Link
-                to="/"
-                className="font-serif text-2xl font-semibold tracking-tight xl:hidden"
-              >
-                SS Oil Mill
+              <Link to="/" className="xl:hidden" aria-label="SS Oil Mill home">
+                <img
+                  src={companyLogo}
+                  alt="Logo"
+                  className="h-10 w-10 shrink-0 rounded-full bg-white object-cover p-1 shadow-md ring-1 ring-amber-200 sm:h-12 sm:w-12"
+                />
               </Link>
               <form
                 role="search"
@@ -142,7 +143,7 @@ export default function Navbar() {
             </div>
             <Link
               to="/"
-              className="hidden font-serif text-3xl font-semibold tracking-tight xl:block"
+              className="justify-self-center font-serif text-2xl font-semibold tracking-tight sm:text-3xl xl:block"
             >
               SS Oil Mill
             </Link>
@@ -171,16 +172,6 @@ export default function Navbar() {
                   <span className="rounded-full bg-leaf/10 px-2.5 py-1 text-xs font-bold text-leaf">
                     Admin
                   </span>
-                )}
-                {authenticated && (
-                  <button
-                    type="button"
-                    aria-label="Logout"
-                    onClick={handleLogout}
-                    className="grid h-11 w-11 place-items-center rounded-full bg-danger/10 text-danger shadow-sm transition duration-200 hover:scale-105 hover:bg-danger hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/30"
-                  >
-                    <LogOut size={18} />
-                  </button>
                 )}
               </div>
               <IconLink

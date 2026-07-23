@@ -231,6 +231,26 @@ export default function Account() {
             </div>
           </div>
 
+          <nav className="sticky top-[52px] z-30 -mx-4 mb-6 overflow-x-auto border-y border-ink/10 bg-cream/95 px-4 py-3 backdrop-blur md:top-20 sm:-mx-6 sm:px-6 lg:hidden" aria-label="Mobile account navigation">
+            <div className="flex min-w-max gap-2">
+              {tabs.filter((tab) => tab.id !== "logout").map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`relative grid min-w-[86px] place-items-center gap-1 rounded-2xl px-3 py-2 text-center text-[11px] font-bold transition ${active ? "bg-white text-leaf shadow-sm" : "text-ink/58 hover:bg-white hover:text-ink"}`}
+                  >
+                    <Icon size={18} />
+                    <span className="leading-tight">{tab.label}</span>
+                    <span className={`absolute bottom-0 h-0.5 w-8 rounded-full bg-leaf transition ${active ? "opacity-100" : "opacity-0"}`} />
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
           {isAdmin && <section className="mb-8 rounded-[2rem] border border-leaf/20 bg-white p-6 shadow-sm">
             <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-start">
               <div>
@@ -262,10 +282,7 @@ export default function Account() {
             </div>
           </section>}
           <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-            <aside className="h-max rounded-[1.5rem] border border-ink/10 bg-white p-3 shadow-sm">
-              <select className="h-12 w-full rounded-xl border border-ink/10 bg-cream px-4 text-sm font-semibold lg:hidden" value={activeTab} onChange={(event) => setActiveTab(event.target.value)}>
-                {tabs.map((tab) => <option key={tab.id} value={tab.id}>{tab.label}</option>)}
-              </select>
+            <aside className="h-max rounded-[1.5rem] border border-ink/10 bg-white p-3 shadow-sm lg:sticky lg:top-28">
               <nav className="hidden gap-2 lg:grid" aria-label="Account navigation">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
@@ -387,4 +404,6 @@ export default function Account() {
 function AdminMetric({ label, value }) {
   return <div className="rounded-2xl bg-cream p-4"><p className="text-xs font-bold uppercase tracking-[0.12em] text-ink/40">{label}</p><p className="mt-2 text-lg font-bold">{value ?? <span className="inline-block h-5 w-16 animate-pulse rounded bg-ink/10" />}</p></div>;
 }
+
+
 
